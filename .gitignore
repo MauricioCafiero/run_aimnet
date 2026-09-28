@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+*.traj
+*.xyz
+vib/
+*_vib*/
+*.pckl
