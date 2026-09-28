@@ -38,13 +38,26 @@ A `uv`-managed venv (Python 3.12) lives in `.venv/`.
 
 ```bash
 uv venv --python 3.12 .venv
-uv pip install --python .venv/bin/python "aimnet[ase,hf]" rdkit matplotlib
+uv pip install --python .venv/bin/python -r requirements.txt
 source .venv/bin/activate
 python code/run_examples.py
 ```
 
 Verified versions: aimnet 0.2.0, torch 2.14.0, warp-lang 1.17.0, ase 3.29.0,
 rdkit 2026.3.6, numpy 2.5.3. The venv is ~1.0 GB (torch dominates).
+
+Two pin files, both generated from the environment the results below were
+produced on:
+
+* `requirements.txt` — the direct dependencies with commentary on why each is
+  there. **Edit this one.**
+* `requirements-lock.txt` — every transitive dependency pinned, for a
+  byte-identical rebuild. Regenerate after changing the above with
+  `uv pip freeze --python .venv/bin/python > requirements-lock.txt`.
+
+Without a pin, `torch` is the package most likely to drift: MLatom's separate
+AIMNet2 interface is already broken on current torch (see the bottom of this
+README), so pinning it is not paranoia.
 
 ## Usage
 

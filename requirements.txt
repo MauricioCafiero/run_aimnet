@@ -1,0 +1,45 @@
+# AIMNet2 + ASE front-end -- direct dependencies, pinned to the versions this
+# repo was verified against on Apple Silicon (macOS, arm64, CPU-only) on
+# 2026-09-28. Install into a Python 3.12 venv:
+#
+#   uv venv --python 3.12 .venv
+#   uv pip install --python .venv/bin/python -r requirements.txt
+#
+# For a byte-identical environment (every transitive dep pinned) use
+# requirements-lock.txt instead. This file is the one to EDIT; the lock is
+# regenerated from it with:
+#
+#   uv pip freeze --python .venv/bin/python > requirements-lock.txt
+
+# --- The potential -----------------------------------------------------------
+# AIMNet2 itself. The [ase] extra pulls ASE (the AIMNet2ASE calculator is
+# useless without it); [hf] adds huggingface-hub + safetensors, needed only if
+# you load a checkpoint from the Hub rather than the default GCS bucket.
+#
+# NOTE: aimnet depends on torch>=2.8 and warp-lang, which pull ~1 GB and
+# dominate both the download and the venv size. Both ship working macOS arm64
+# wheels -- despite warp-lang being an NVIDIA project, it runs CPU-only here.
+aimnet[ase,hf]==0.2.0
+
+# --- Pinned transitively, but pinned deliberately ----------------------------
+# torch is a dependency of aimnet, not a direct import of this repo's code, but
+# it is THE version-sensitive package in the stack: MLatom's separate AIMNet2
+# interface (the JIT .jpt format) already breaks on current torch with
+# `KeyError: nbmat_lr`. aimnet 0.2.0's own .pt weights are fine on 2.14.0, which
+# is what this pin records.
+torch==2.14.0
+# warp-lang JIT-compiles AIMNet2's neighbour-list kernels on first call (~2 s,
+# once per process -- see the timing note in the README).
+warp-lang==1.17.0
+ase==3.29.0
+
+# --- Input building ----------------------------------------------------------
+# RDKit drives smiles_to_atoms(): parse -> add Hs -> ETKDGv3 embed -> MMFF/UFF
+# minimize. It is also where the formal charge is read off the SMILES, which is
+# what makes AIMNet2's charge-awareness usable without a manual argument.
+# Strictly optional: the XYZ and ase.build.molecule paths work without it.
+rdkit==2026.3.6
+
+# Optional -- not imported by aimnet_calc.py or run_examples.py. Kept so that
+# plotting trajectories/spectra in a notebook does not need a second install.
+matplotlib==3.11.2
