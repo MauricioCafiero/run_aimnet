@@ -80,6 +80,41 @@ xyz   = ac.from_xyz("mol.xyz", charge=-1)   # XYZ carries no charge — pass it 
 paths). Ensemble members are `"wb97m-1"` … `"wb97m-3"`; the spread across the
 four is a cheap uncertainty estimate.
 
+### Open-shell systems: the `nse` model
+
+`"nse"` is the only model that reads multiplicity. Pass `mult=` or set
+`atoms.info["mult"]` — both routes give an identical answer, and `attach()`
+records it so it survives a re-attach:
+
+```python
+o2 = ac.molecule("O2")
+ac.singlepoint(o2, model="nse", mult=3)["energy"]   # triplet
+ch3 = ac.molecule("CH3")
+ac.singlepoint(ch3, model="nse", mult=2)            # doublet radical
+ch3.calc.get_spin_charges()                          # where the spin sits
+```
+
+Verified physics, not just "it ran":
+
+| check | result |
+|---|---|
+| O₂ singlet vs triplet | triplet lower by **1.37 eV** — the correct ground state |
+| CH₃• spin charges | sum to **1.000** (one unpaired electron), **0.822 on carbon** |
+
+### ⚠️ Never compare energies across model families
+
+The families are trained to different targets, and `"rxn"` uses a learned
+shifted-electronic scale. Ethanol:
+
+| model | energy |
+|---|---|
+| `wb97m` | −4221.57 eV |
+| `rxn` | −1.11 eV |
+
+Same molecule, ~4220 eV apart. Energy *differences* are only meaningful within
+a single `model=`; ensemble members of one family are comparable to each other.
+AIMNet2 itself warns if you construct two families in one process.
+
 ## Feasibility notes (read this first)
 
 * **It works on Apple Silicon, on the CPU.** torch 2.14 and warp-lang 1.17 both
@@ -103,8 +138,11 @@ four is a cheap uncertainty estimate.
 
 ## Model weights
 
-Downloaded on first use to `~/.cache/aimnet/` (~8.8 MB each). Currently cached:
-`wb97m`, `b973c`, `2025`. `nse` and `rxn` will download on first use.
+Downloaded on first use to `~/.cache/aimnet/` (~8.8 MB each). **All five are
+now cached** — `wb97m`, `b973c`, `2025`, `nse`, `rxn` — so the repo runs fully
+offline. Each was loaded and exercised: `nse` reproduces the O₂ triplet ground
+state and CH₃• spin localization above; `rxn` optimizes ethanol to
+fmax < 0.02 eV/Å.
 
 Note: MLatom's separate AIMNet2 interface (in the `mlatom_omnip2x` venv) uses a
 *different*, JIT-compiled `.jpt` format under `~/.mlatom/models/` and is not

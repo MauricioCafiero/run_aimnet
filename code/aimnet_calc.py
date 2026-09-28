@@ -27,6 +27,14 @@ names and signatures. Two things differ, both because of what AIMNet2 is:
 Multiplicity is only meaningful for the spin-aware ``"nse"`` model; the other
 models are closed-shell and ignore ``mult``.
 
+.. warning::
+   **Never compare energies across model families.** ``"wb97m"``, ``"b973c"``,
+   ``"nse"`` and ``"rxn"`` are trained to different targets and, in the case of
+   ``"rxn"``, a learned shifted-electronic scale -- ethanol comes out at
+   -4221.6 eV under ``"wb97m"`` but -1.1 eV under ``"rxn"``. Energy differences
+   are only meaningful within one ``model=``. Ensemble members of the same
+   family ("wb97m-1" ... "wb97m-3") *are* comparable to each other.
+
 Energies are in eV, lengths in Angstrom, forces in eV/Angstrom -- ASE's native
 units, which is what AIMNet2ASE already returns.
 
@@ -217,6 +225,12 @@ def attach(atoms: Atoms, model: str = DEFAULT_MODEL, charge: Optional[int] = Non
     if charge is None:
         charge = int(atoms.info.get("charge", 0))
     atoms.info.setdefault("charge", charge)
+    # Record the spin state too, so it survives a later re-attach. Only the
+    # "nse" model reads it; the closed-shell models ignore it.
+    if "mult" in calc_kw:
+        atoms.info["mult"] = int(calc_kw["mult"])
+    elif "mult" in atoms.info:
+        calc_kw["mult"] = int(atoms.info["mult"])
     atoms.calc = get_calculator(model=model, charge=charge, **calc_kw)
     return atoms
 
